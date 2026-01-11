@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -66,7 +67,16 @@ export default function Index() {
   const [activeTab, setActiveTab] = useState('tasks');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
 
   useEffect(() => {
     loadTasks();
@@ -97,6 +107,16 @@ export default function Index() {
 
   const filteredTasks = tasks;
 
+  const handleLogout = () => {
+    localStorage.removeItem('sessionToken');
+    localStorage.removeItem('user');
+    setUser(null);
+    toast({
+      title: 'Выход выполнен',
+      description: 'До скорой встречи!'
+    });
+  };
+
   const getStatusBadge = (status: TaskStatus) => {
     const variants = {
       new: { label: 'Новая', className: 'bg-green-100 text-green-700 hover:bg-green-100' },
@@ -122,31 +142,39 @@ export default function Index() {
             </div>
 
             <div className="flex items-center gap-4">
-              <Select value={userRole} onValueChange={(value) => setUserRole(value as UserRole)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="client">
-                    <div className="flex items-center gap-2">
-                      <Icon name="User" size={16} />
-                      <span>Заказчик</span>
+              {user ? (
+                <>
+                  <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-purple-50 rounded-lg">
+                    <Avatar className="w-8 h-8">
+                      <AvatarFallback>{user.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div className="text-sm">
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-xs text-muted-foreground">{user.role === 'client' ? 'Заказчик' : 'Исполнитель'}</p>
                     </div>
-                  </SelectItem>
-                  <SelectItem value="worker">
-                    <div className="flex items-center gap-2">
-                      <Icon name="Briefcase" size={16} />
-                      <span>Исполнитель</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
-                <Icon name="Bell" size={18} className="mr-2" />
-                Уведомления
-                <Badge className="ml-2 bg-white text-primary hover:bg-white">3</Badge>
-              </Button>
+                  </div>
+                  <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
+                    <Icon name="Bell" size={18} className="mr-2" />
+                    Уведомления
+                    <Badge className="ml-2 bg-white text-primary hover:bg-white">3</Badge>
+                  </Button>
+                  <Button variant="outline" onClick={handleLogout}>
+                    <Icon name="LogOut" size={18} className="mr-2" />
+                    Выйти
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => navigate('/login')}>
+                    <Icon name="LogIn" size={18} className="mr-2" />
+                    Войти
+                  </Button>
+                  <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90" onClick={() => navigate('/register')}>
+                    <Icon name="UserPlus" size={18} className="mr-2" />
+                    Регистрация
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
