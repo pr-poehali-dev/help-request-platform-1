@@ -1,0 +1,17 @@
+{
+  "tests": [
+    {
+      "name": "Get user profile",
+      "method": "GET",
+      "path": "/?id=7",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": 7,
+        "name": "string",
+        "role": "string",
+        "rating": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

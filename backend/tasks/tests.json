@@ -1,0 +1,31 @@
+{
+  "tests": [
+    {
+      "name": "Get all tasks",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "0": {
+          "id": "number",
+          "title": "string",
+          "category": "string",
+          "price": "number"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Filter tasks by category",
+      "method": "GET",
+      "path": "/?category=Ремонт",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "0": {
+          "category": "Ремонт"
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

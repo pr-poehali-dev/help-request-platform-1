@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useToast } from '@/hooks/use-toast';
 
 type TaskStatus = 'new' | 'in_progress' | 'completed';
 type UserRole = 'client' | 'worker';
@@ -31,80 +32,8 @@ interface Task {
   responses: number;
 }
 
-const mockTasks: Task[] = [
-  {
-    id: 1,
-    title: 'Установить кондиционер',
-    description: 'Требуется установка кондиционера в квартире, 2 комнаты',
-    price: 5000,
-    category: 'Ремонт',
-    location: 'Москва, СВАО',
-    date: '15.01.2026',
-    status: 'new',
-    author: { name: 'Анна К.', rating: 4.8, avatar: '' },
-    responses: 3
-  },
-  {
-    id: 2,
-    title: 'Сборка мебели ИКЕА',
-    description: 'Нужно собрать шкаф и комод, инструменты есть',
-    price: 3000,
-    category: 'Бытовые услуги',
-    location: 'Санкт-Петербург',
-    date: '16.01.2026',
-    status: 'new',
-    author: { name: 'Дмитрий С.', rating: 5.0 },
-    responses: 7
-  },
-  {
-    id: 3,
-    title: 'Ремонт стиральной машины',
-    description: 'Машинка не включается, нужна диагностика',
-    price: 2500,
-    category: 'Ремонт техники',
-    location: 'Москва, ЦАО',
-    date: '14.01.2026',
-    status: 'in_progress',
-    author: { name: 'Ольга П.', rating: 4.5 },
-    responses: 2
-  },
-  {
-    id: 4,
-    title: 'Перевезти вещи на дачу',
-    description: 'Нужен грузчик с газелью, 3 часа работы',
-    price: 4000,
-    category: 'Переезды',
-    location: 'Московская область',
-    date: '17.01.2026',
-    status: 'new',
-    author: { name: 'Сергей М.', rating: 4.9 },
-    responses: 5
-  },
-  {
-    id: 5,
-    title: 'Настроить компьютер',
-    description: 'Установить Windows, настроить программы',
-    price: 2000,
-    category: 'IT услуги',
-    location: 'Москва, ЗАО',
-    date: '15.01.2026',
-    status: 'new',
-    author: { name: 'Иван Т.', rating: 4.7 },
-    responses: 12
-  },
-  {
-    id: 6,
-    title: 'Убрать квартиру после ремонта',
-    description: 'Генеральная уборка 3х комнатной квартиры',
-    price: 6000,
-    category: 'Уборка',
-    location: 'Москва, ЮЗАО',
-    date: '18.01.2026',
-    status: 'completed',
-    author: { name: 'Марина Л.', rating: 5.0 },
-    responses: 1
-  }
-];
+const TASKS_API = 'https://functions.poehali.dev/3710bde1-a547-479f-8c8c-d3c144645ec1';
+const USERS_API = 'https://functions.poehali.dev/f0a809b3-2c7e-4395-8f2c-259f3326e081';
 
 const categories = ['Все категории', 'Ремонт', 'Бытовые услуги', 'Ремонт техники', 'Переезды', 'IT услуги', 'Уборка'];
 
@@ -135,10 +64,38 @@ export default function Index() {
   const [userRole, setUserRole] = useState<UserRole>('client');
   const [selectedCategory, setSelectedCategory] = useState('Все категории');
   const [activeTab, setActiveTab] = useState('tasks');
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  const filteredTasks = selectedCategory === 'Все категории' 
-    ? mockTasks 
-    : mockTasks.filter(task => task.category === selectedCategory);
+  useEffect(() => {
+    loadTasks();
+  }, [selectedCategory]);
+
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      const url = selectedCategory === 'Все категории' 
+        ? TASKS_API 
+        : `${TASKS_API}?category=${encodeURIComponent(selectedCategory)}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to load tasks');
+      
+      const data = await response.json();
+      setTasks(data);
+    } catch (error) {
+      toast({
+        title: 'Ошибка загрузки',
+        description: 'Не удалось загрузить задачи',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredTasks = tasks;
 
   const getStatusBadge = (status: TaskStatus) => {
     const variants = {
@@ -301,8 +258,13 @@ export default function Index() {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredTasks.map((task) => (
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Icon name="Loader2" size={48} className="animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredTasks.map((task) => (
                   <Card key={task.id} className={`hover-scale border-none shadow-lg ${task.status === 'new' ? 'animate-pulse-glow' : ''}`}>
                     <CardHeader>
                       <div className="flex items-start justify-between mb-2">
@@ -348,8 +310,9 @@ export default function Index() {
                       </Button>
                     </CardFooter>
                   </Card>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="profile" className="space-y-6">
